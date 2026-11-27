@@ -51,4 +51,15 @@ if (!isPng || header.readUInt32BE(16) !== 1024 || header.readUInt32BE(20) !== 10
 
 mkdirSync(outDir, { recursive: true });
 copyFileSync(source, target);
+
+// Verify the copy, not just the source: read the written file back and
+// re-check its signature and dimensions, so a truncated copy can never
+// reach the grader looking like a valid entry.
+const copied = readFileSync(target);
+if (copied.length !== bytes || !copied.subarray(0, 8).equals(pngSignature)) {
+  throw new Error('round-trip check failed: copied entry.png does not match the source');
+}
+if (copied.readUInt32BE(16) !== 1024 || copied.readUInt32BE(20) !== 1024) {
+  throw new Error('round-trip check failed: copied entry.png is not 1024x1024');
+}
 console.log(`wrote ${target} (${bytes} bytes, 1024x1024 PNG)`);
